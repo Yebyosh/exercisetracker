@@ -14,11 +14,11 @@ const subSchema = new mongoose.Schema({
 });
 const exerTrkSchema = new mongoose.Schema({
   username: { type: String, unique: true },
-  count: { type: Number, min: 0 },
+  count: { type: Number, default: 0 },
   log: [subSchema]
 });
-let exercise = mongoose.model('Exercise', subSchema);
-let exerciser = mongoose.model('Exerciser', exerTrkSchema);
+let Exercise = mongoose.model('Exercise', subSchema);
+let Exerciser = mongoose.model('Exerciser', exerTrkSchema);
 
 app.use(cors())
 app.use(express.static('public'))
@@ -38,6 +38,25 @@ app.post("/api/users", (req, res) => {
 //  console.log(req.body);
   const {username} = req.body;
   console.log(username);
+
+  let newUser = new Exerciser({
+    username: username
+  });
+
+  newUser
+  .save()
+  .then((doc) =>
+  {
+    console.log(`POSTing: ${doc}`);
+    res.json({username: doc.username, _id: doc.id});
+  })
+  .catch((err) =>
+  {
+    console.error(err);
+    if (err.code == 11000) {
+      res.status(400).send('User already exists');
+    }
+  })
 });
 
 /*
@@ -46,7 +65,16 @@ GET request to /api/users returns an array.
 Each element in array is an object literal containing user's username and _id.
 */
 app.get("/api/users", (req, res) => {
-  console.log(req)
+  console.log(req.params); // params should be empty
+  Exerciser
+  .find({})
+  .select("username _id")
+  .then ((results) => {
+    res.json(results);
+  })
+  .catch ((err) => {
+    console.error(err);
+  })
 });
 
 /*
@@ -54,9 +82,10 @@ POST to /api/users/:_id/exercises with form data description, duration, and opti
 Response returned from POST /api/users/:_id/exercises will be the user object with exercise fields added.
 */
 app.post("/api/users/:_id/exercises", (req, res) => {
-  console.log(req.body);
+  console.log(req.body, req.params);
   const {description, duration, date} = req.body;
-  console.log(req.body.id, description, duration, date);
+  const {_id} = req.params;
+  console.log(_id, description, duration, date);
 
 });
 
