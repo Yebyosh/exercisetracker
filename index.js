@@ -1,9 +1,8 @@
+const mongoose = require('mongoose');
 const express = require('express')
 const app = express()
 const cors = require('cors')
 require('dotenv').config()
-
-const mongoose = require('mongoose');
 let bodyParser = require('body-parser');
 
 mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
@@ -23,16 +22,22 @@ let exerciser = mongoose.model('Exerciser', exerTrkSchema);
 
 app.use(cors())
 app.use(express.static('public'))
+
+app.use(bodyParser.urlencoded({extended: false}));
+
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/views/index.html')
 });
+
 
 /*
 POST to /api/users with form data username to create new user.
 Returned response from POST /api/users with form data username will be object with username and _id properties.
 */
 app.post("/api/users", (req, res) => {
-  console.log(req);
+//  console.log(req.body);
+  const {username} = req.body;
+  console.log(username);
 });
 
 /*
@@ -48,8 +53,11 @@ app.get("/api/users", (req, res) => {
 POST to /api/users/:_id/exercises with form data description, duration, and optionally date. If no date supplied, current date used.
 Response returned from POST /api/users/:_id/exercises will be the user object with exercise fields added.
 */
-app.post("/api/users:_id/exercises", (req, res) => {
+app.post("/api/users/:_id/exercises", (req, res) => {
   console.log(req.body);
+  const {description, duration, date} = req.body;
+  console.log(req.body.id, description, duration, date);
+
 });
 
 /*
@@ -65,6 +73,7 @@ Can add from, to and limit parameters to GET /api/users/:_id/logs request to ret
 app.get("/api/users/:_id/logs", (req, res) => {
   console.log(req);
 });
+
 
 const listener = app.listen(process.env.PORT || 3000, () => {
   console.log('Your app is listening on port ' + listener.address().port)
