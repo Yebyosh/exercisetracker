@@ -5,6 +5,8 @@ const cors = require('cors')
 require('dotenv').config()
 let bodyParser = require('body-parser');
 
+const regexDate = /\d\d\d\d-\d\d-\d\d/;
+
 mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
 
 const subSchema = new mongoose.Schema({
@@ -100,7 +102,6 @@ app.post("/api/users/:_id/exercises", (req, res) => {
   const {description, duration, date} = req.body;
   const {_id} = req.params;
   console.log(_id, description, duration, date);
-  const regexDate = /\d\d\d\d-\d\d-\d\d/;
 
   const adjDate = regexDate.test(date) ? new Date(date).toDateString(): new Date().toDateString();
   console.log(adjDate);
@@ -153,17 +154,42 @@ app.get("/api/users/:_id/logs", (req, res) => {
   console.log(req.body);
   console.log(req.query);
   const {_id} = req.params;
+  const {from, to, limit} = req.query;
 
   Exerciser
   .findById({_id: _id})
   .then ((doc) =>
     {
       console.log(doc);
+
+      let wrkLog = doc.log;
+
+      if (from)
+      {
+        if (regexDate.test(from))
+        {
+          wrkLog = wrkLog.filter(item => new Date(item.date) >= new Date(from));
+        }
+      }
+
+      if (to)
+      {
+        if (regexDate.test(to))
+          {
+            wrkLog = wrkLog.filter(item => new Date(item.date) <= new Date(to));
+          }
+        }
+  
+      if (limit)
+      {
+        wrkLog.splice(limit);
+      }
+
       res.json({
         username: doc.username,
         count: doc.count,
         _id: doc.id,
-        log: doc.log,
+        log: wrkLog
       });
     })
   .catch ((err) =>
