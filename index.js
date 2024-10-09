@@ -10,8 +10,8 @@ mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopol
 const subSchema = new mongoose.Schema({
   description: { type: String },
   duration: { type: Number, min: 0 },
-  date: { type: String }
-});
+  date: { type: String },
+}, { _id: false });
 const exerTrkSchema = new mongoose.Schema({
   username: { type: String, unique: true },
   count: { type: Number, default: 0 },
@@ -96,13 +96,13 @@ POST to /api/users/:_id/exercises with form data description, duration, and opti
 Response returned from POST /api/users/:_id/exercises will be the user object with exercise fields added.
 */
 app.post("/api/users/:_id/exercises", (req, res) => {
-  console.log(req.body, req.params);
+  console.log(req.body, req.params, req.query);
   const {description, duration, date} = req.body;
   const {_id} = req.params;
   console.log(_id, description, duration, date);
   const regexDate = /\d\d\d\d-\d\d-\d\d/;
 
-  const adjDate = date.match(regexDate)? new Date(date).toDateString(): new Date().toDateString();
+  const adjDate = regexDate.test(date) ? new Date(date).toDateString(): new Date().toDateString();
   console.log(adjDate);
 
   Exerciser
@@ -118,7 +118,7 @@ app.post("/api/users/:_id/exercises", (req, res) => {
     result
     .save()
     .then ((doc) =>
-      {
+    {
       res.json({
         username: doc.username,
         description: description,
@@ -149,7 +149,27 @@ Date property of any object in log array returned should be a string. Use dateSt
 Can add from, to and limit parameters to GET /api/users/:_id/logs request to retrieve part of log of any user. from and to are dates in yyyy-mm-dd format. limit is an integer of how many logs to send back.
 */
 app.get("/api/users/:_id/logs", (req, res) => {
-  console.log(req);
+  console.log(req.params); // params only _id...
+  console.log(req.body);
+  console.log(req.query);
+  const {_id} = req.params;
+
+  Exerciser
+  .findById({_id: _id})
+  .then ((doc) =>
+    {
+      console.log(doc);
+      res.json({
+        username: doc.username,
+        count: doc.count,
+        _id: doc.id,
+        log: doc.log,
+      });
+    })
+  .catch ((err) =>
+  {
+    console.error(err);
+  })
 });
 
 
