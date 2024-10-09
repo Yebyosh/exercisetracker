@@ -10,14 +10,13 @@ mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopol
 const subSchema = new mongoose.Schema({
   description: { type: String },
   duration: { type: Number, min: 0 },
-  date: { type: Date, default: Date.now }
+  date: { type: String }
 });
 const exerTrkSchema = new mongoose.Schema({
   username: { type: String, unique: true },
   count: { type: Number, default: 0 },
   log: [subSchema]
 });
-let Exercise = mongoose.model('Exercise', subSchema);
 let Exerciser = mongoose.model('Exerciser', exerTrkSchema);
 
 app.use(cors())
@@ -38,7 +37,21 @@ app.post("/api/users", (req, res) => {
 //  console.log(req.body);
   const {username} = req.body;
   console.log(username);
-
+if (username==="DeleteALL") {
+  Exerciser
+  .deleteMany({})
+  .then((doc) =>
+  {
+    console.log("Delete Success!");
+    res.status(301).send('dB cleared');
+  })
+  .catch((err) =>
+  {
+    console.error(err);
+  })
+}
+else
+{
   let newUser = new Exerciser({
     username: username
   });
@@ -57,6 +70,7 @@ app.post("/api/users", (req, res) => {
       res.status(400).send('User already exists');
     }
   })
+}
 });
 
 /*
@@ -86,7 +100,42 @@ app.post("/api/users/:_id/exercises", (req, res) => {
   const {description, duration, date} = req.body;
   const {_id} = req.params;
   console.log(_id, description, duration, date);
+  const regexDate = /\d\d\d\d-\d\d-\d\d/;
 
+  const adjDate = date.match(regexDate)? new Date(date).toDateString(): new Date().toDateString();
+  console.log(adjDate);
+
+  Exerciser
+  .findOne({_id: _id})
+  .then ((result) => {
+    let record = {
+      description: description,
+      duration: duration,
+      date: adjDate
+    };
+    result.log.push(record);
+    result.count++;
+    result
+    .save()
+    .then ((doc) =>
+      {
+      res.json({
+        username: doc.username,
+        description: description,
+        duration: Number(duration),
+        date: adjDate,
+        _id: doc.id
+      });
+    })
+    .catch ((err) =>
+    {
+      console.error(err);
+    })
+  })
+  .catch ((err) =>
+  {
+    console.error(err);
+  })
 });
 
 /*
